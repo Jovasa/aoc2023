@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -64,7 +65,14 @@ fn is_valid(lengths: &Vec<u32>, state: &Vec<State>) -> bool {
 }
 
 
-fn recursive_count(lengths: &Vec<u32>, state: &Vec<State>, lengths_index: usize, state_index: usize) -> u64 {
+fn recursive_count(lengths: &Vec<u32>,
+                   state: &Vec<State>,
+                   lengths_index: usize,
+                   state_index: usize,
+                   cache: &mut HashMap<(usize, usize), u64>) -> u64 {
+    if let Some(x) = cache.get(&(lengths_index, state_index)) {
+        return *x as u64;
+    }
     if lengths_index == lengths.len() {
         for i in state_index..state.len() {
             if state[i] == State::DAMAGED {
@@ -74,8 +82,9 @@ fn recursive_count(lengths: &Vec<u32>, state: &Vec<State>, lengths_index: usize,
         return 1;
     }
     let length = lengths[lengths_index] as usize;
+    let space_needed = (lengths[lengths_index..].iter().fold(0, |x, y| x + y + 1) - 1 )as usize;
     let mut total = 0;
-    for i in state_index..state.len() - length + 1 {
+    for i in state_index..state.len() - space_needed + 1 {
         if state[i] == State::OPERATIONAL {
             continue
         }
@@ -94,11 +103,28 @@ fn recursive_count(lengths: &Vec<u32>, state: &Vec<State>, lengths_index: usize,
         if length + i != state.len() && state[length + i] == State::DAMAGED {
             continue
         }
-        total += recursive_count(lengths, state, lengths_index + 1, i + length + 1);
+        total += recursive_count(lengths, state, lengths_index + 1, i + length + 1, cache);
     }
+    cache.insert((lengths_index, state_index), total);
     total
 }
 
+fn quintuple_state(state: Vec<State>) -> Vec<State> {
+    let mut new_state = state.clone();
+    for _ in 0..4 {
+        new_state.push(State::UNKNOWN);
+        new_state.extend(state.iter())
+    }
+    new_state
+}
+
+fn quintuple_pattern(lengths: Vec<u32>) -> Vec<u32> {
+    let mut new_lengths = lengths.clone();
+    for _ in 0..4 {
+        new_lengths.extend(lengths.iter())
+    }
+    new_lengths
+}
 
 fn main() {
     let input = std::fs::read_to_string("data/day12.txt").unwrap();
@@ -110,8 +136,13 @@ fn main() {
         let lengths = parts[1].split(",").map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>();
         let state = pattern.chars().map(|x| State::from_char(&x)).collect::<Vec<_>>();
 
-        let a = recursive_count(&lengths, &state, 0, 0);
+        let lengths = quintuple_pattern(lengths);
+        let state = quintuple_state(state);
+        let mut cache = HashMap::new();
+
+        let a = recursive_count(&lengths, &state, 0, 0, &mut cache);
         total += a;
+        println!("{}", a)
     }
 
     println!("{}", total);
