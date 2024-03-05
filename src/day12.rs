@@ -63,6 +63,43 @@ fn is_valid(lengths: &Vec<u32>, state: &Vec<State>) -> bool {
     }
 }
 
+
+fn recursive_count(lengths: &Vec<u32>, state: &Vec<State>, lengths_index: usize, state_index: usize) -> u64 {
+    if lengths_index == lengths.len() {
+        for i in state_index..state.len() {
+            if state[i] == State::DAMAGED {
+                return 0;
+            }
+        }
+        return 1;
+    }
+    let length = lengths[lengths_index] as usize;
+    let mut total = 0;
+    for i in state_index..state.len() - length + 1 {
+        if state[i] == State::OPERATIONAL {
+            continue
+        }
+        for j in state_index..i {
+            if state[j] == State::DAMAGED {
+                return total;
+            }
+        }
+        let mut valid = true;
+        for j in 1..length {
+            valid &= state[j + i] != State::OPERATIONAL;
+        }
+        if !valid {
+            continue
+        }
+        if length + i != state.len() && state[length + i] == State::DAMAGED {
+            continue
+        }
+        total += recursive_count(lengths, state, lengths_index + 1, i + length + 1);
+    }
+    total
+}
+
+
 fn main() {
     let input = std::fs::read_to_string("data/day12.txt").unwrap();
 
@@ -72,30 +109,9 @@ fn main() {
         let pattern = parts[0];
         let lengths = parts[1].split(",").map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>();
         let state = pattern.chars().map(|x| State::from_char(&x)).collect::<Vec<_>>();
-        let unknown_indexes = state.iter().enumerate().filter_map(|(i, x)| {
-            if *x == State::UNKNOWN {
-                Some(i)
-            } else {
-                None
-            }
-        }).collect::<Vec<_>>();
 
-        let number_of_total_combinations = 2u32.pow(unknown_indexes.len() as u32);
-        let mut valid_combinations = 0;
-        for i in 0..number_of_total_combinations {
-            let mut current_state = state.clone();
-            for (j, index) in unknown_indexes.iter().enumerate() {
-                if i & (1 << j) != 0 {
-                    current_state[*index] = State::DAMAGED;
-                } else {
-                    current_state[*index] = State::OPERATIONAL;
-                }
-            }
-            if is_valid(&lengths, &current_state) {
-                valid_combinations += 1;
-            }
-        }
-        total += valid_combinations;
+        let a = recursive_count(&lengths, &state, 0, 0);
+        total += a;
     }
 
     println!("{}", total);
