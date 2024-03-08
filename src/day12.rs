@@ -29,42 +29,6 @@ impl Debug for State {
     }
 }
 
-fn is_valid(lengths: &Vec<u32>, state: &Vec<State>) -> bool {
-    let mut current_length = lengths.iter();
-    let mut current_streak = 0;
-    let mut found = 0;
-    for s in state {
-        match s {
-            State::OPERATIONAL => {
-                if current_streak != 0 {
-                    if let Some(x) = current_length.next()   {
-                        if current_streak != *x {
-                            return false;
-                        }
-                    }
-                    else {
-                        return false;
-                    }
-                    found += 1;
-                    current_streak = 0;
-                }
-            },
-            State::UNKNOWN => {
-                return false;
-            },
-            State::DAMAGED => {
-                current_streak += 1;
-            }
-
-        }
-    }
-    match current_length.next() {
-        Some(x) => *x == current_streak && found == lengths.len() - 1,
-        None => current_streak == 0,
-    }
-}
-
-
 fn recursive_count(lengths: &Vec<u32>,
                    state: &Vec<State>,
                    lengths_index: usize,
