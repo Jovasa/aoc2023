@@ -92,12 +92,12 @@ fn main() {
         let path = queue.pop().unwrap();
         let x = path.x;
         let y = path.y;
-        if x == width as i16 - 1 && y == height as i16 - 1 {
+        let steps_in_direction = path.steps_in_direction;
+        if x == width as i16 - 1 && y == height as i16 - 1 && steps_in_direction >= 4 {
             smallest = std::cmp::min(smallest, path.heat);
             continue;
         }
         let direction = path.direction;
-        let steps_in_direction = path.steps_in_direction;
 
         let heat = path.heat;
 
@@ -129,7 +129,7 @@ fn main() {
             let next_direction = step.direction;
             let next_steps_in_direction = step.steps_in_direction;
 
-            if next_direction == direction && next_steps_in_direction > 3 {
+            if (next_direction != direction && steps_in_direction < 4) || next_steps_in_direction > 10 {
                 continue;
             }
 
@@ -141,10 +141,9 @@ fn main() {
                 continue;
             }
 
-            if grid[next_y as usize][next_x as usize] == 0 {
-                continue;
-            }
             let next_step = Path::new(next_x, next_y, next_direction, next_steps_in_direction,  heat + grid[next_y as usize][next_x as usize] as u32);
+
+            // println!("{:?}", next_step);
 
             states.insert(next_step);
             queue.push(next_step);
