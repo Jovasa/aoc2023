@@ -47,7 +47,7 @@ fn main() {
             };
             let mut next = 0;
             for d in data {
-                if d[1] <= current && current <= d[1] + d[2]{
+                if d[1] <= current && current <= d[1] + d[2] {
                     let offset = current - d[1];
                     next = d[0] + offset;
                     break;
@@ -71,10 +71,11 @@ fn main() {
         // for j in 0..end {
         //     ranges.push((start + j, 1));
         // }
-        ranges.push((start, end));
+        ranges.push((start, start + end));
     }
 
     let mut start = "seed".to_owned();
+    let mut temp_ranges = ranges.clone();
     while start != "location" {
         let data = mapping.get(&start).unwrap();
         let to = match from_to_map.get(&start) {
@@ -82,40 +83,36 @@ fn main() {
             None => break,
         };
         let mut next = Vec::new();
-        for (s, e) in &ranges {
-            let mut found = false;
-            for d in data {
-                if d[1] <= *s && *s <= d[1] + d[2]{
-                    let offset = *s - d[1];
-                    if *s + *e <= d[1] + d[2] + 1 {
-                        next.push((d[0] + offset, *e));
-                    } else {
-                        let change = *s + *e - d[1] - d[2];
-                        next.push((d[0] + offset, change));
-                        next.push((d[0] + change, *e - change));
-                    }
-                    found = true;
-                }
-                else if *s <= d[1] && d[1] <= *s + *e {
-                    let offset = d[1] - *s;
-                    if *s + *e <= d[1] + d[2] {
-                        next.push((d[0] + offset, *e));
-                    } else {
-                        let change = *s + *e - d[1] - d[2];
-                        next.push((d[0] + offset, change));
-                        next.push((d[0] + change, *e - change));
-                    }
-                    found = true;
-                }
-            }
-            if !found {
-                next.push((*s, *e));
-            }
-        }
-        ranges = next;
-        println!("{} {:?}", to, ranges);
-        start = to.clone();
+        temp_ranges = ranges.clone();
+        for d in data {
+            let dest = d[0];
+            let src = d[1];
+            let sz = d[2];
+            let src_end = src + sz;
+            let mut inner_ranges = Vec::new();
+            for (st, ed) in &temp_ranges {
+                let before = (*st, (*ed).min(src));
+                let inter = (src.max(*st), src_end.min(*ed));
+                let after = (src_end.max(*st), *ed);
 
+                if before.1 > before.0 {
+                    inner_ranges.push(before);
+                }
+                if inter.1 > inter.0 {
+                    next.push((inter.0 -src + dest, inter.1 - src + dest));
+                }
+                if after.1 > after.0 {
+                    inner_ranges.push(after);
+                }
+            }
+            temp_ranges = inner_ranges;
+        }
+        next.extend(temp_ranges.iter());
+        ranges = next;
+        if start == "seed" {
+            println!("{} {:?}", to, ranges);
+        }
+        start = to.clone();
     }
     smallest = u64::MAX;
     for (s, _) in ranges {
