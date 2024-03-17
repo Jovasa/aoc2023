@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 regex = "1.10.3"
+rand = "0.9.0-alpha.0"
 
 [[bin]]
 name = "day1"
@@ -96,7 +97,10 @@ path = "src/day22.rs"
 name = "day23"
 path = "src/day23.rs"
 
-
 [[bin]]
 name = "day24"
 path = "src/day24.rs"
+
+[[bin]]
+name = "day25"
+path = "src/day25.rs"
